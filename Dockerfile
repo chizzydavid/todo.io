@@ -1,6 +1,6 @@
 FROM node:14-alpine AS production
 
-WORKDIR /usr/src/app
+WORKDIR /app
 
 COPY . .
 
