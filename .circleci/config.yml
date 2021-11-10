@@ -44,6 +44,6 @@ workflows:
       - build
       - test:
           requires: [build]
-      - build_docker_image
+      - build_docker_image:
           requires: [test]
 
