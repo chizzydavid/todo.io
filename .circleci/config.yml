@@ -1,0 +1,49 @@
+version: 2.1
+
+orbs:
+  aws-cli: circleci/aws-cli@2.0.3
+
+jobs:
+  build:
+    docker:
+      - image: circleci/node:13.8.0
+    steps:
+      - checkout
+      - run: npm i
+      - save_cache:
+          key: npm-build
+          paths: [node-modules]
+      - run: npm run lint
+
+  test:
+    docker:
+      - image: circleci/node:13.8.0
+    steps:
+      - checkout
+      - restore_cache:
+          keys: [npm-build]
+      - run: npm run test
+
+  build_docker_image:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - run:
+          name: Create Docker Image and Push to Registry
+          command: |
+            aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/d9h2q7g2
+            docker build -t capstone_proj .
+            docker tag capstone_proj:${CIRCLE_WORKFLOW_ID:0:7} public.ecr.aws/d9h2q7g2/capstone_proj:${CIRCLE_WORKFLOW_ID:0:7}
+            docker push public.ecr.aws/d9h2q7g2/capstone_proj:${CIRCLE_WORKFLOW_ID:0:7}
+
+
+workflows:
+  blue-green-workflow:
+    jobs:
+      - build
+      - test:
+          requires: [build]
+      - build_docker_image
+          requires: [test]
+
